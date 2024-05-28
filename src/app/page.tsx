@@ -36,7 +36,7 @@ export default function Home() {
 
   useEffect(() => {
     if (commandOutput.input !== "") {
-      setOutput([...output, commandOutput]);
+      setOutput((prevOutput) => [...prevOutput, commandOutput]);
       scrollToBottom()
     }
   }, [commandOutput]);
