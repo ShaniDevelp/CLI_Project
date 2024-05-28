@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import CommandParser from "../components/CommandParser";
+import CommandParser from "@/components/commandParser";
 import ResultOutput from "@/components/result";
 
 export default function Home() {
