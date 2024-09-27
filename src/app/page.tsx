@@ -55,8 +55,9 @@ export default function Home() {
         method: "POST",
         body: data,
       });
+      const responseData = await res.json();
       if (!res.ok) {
-        setError(true);
+        setError(responseData.message);
       }
       if (res.status === 200) {
         setOutput((prevOutput) => prevOutput.slice(0, -1));
@@ -164,7 +165,7 @@ export default function Home() {
       {loading && <p className="text-white">Drawing Chart...</p>}
       {error && (
         <p className="text-red-500 mt-7">
-          Invalid file type. Only CSV files allowed
+           {error}
         </p>
       )}
     </div>

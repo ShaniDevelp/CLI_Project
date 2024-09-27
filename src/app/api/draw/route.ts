@@ -1,19 +1,41 @@
-import { readFile } from "fs/promises";
 import { NextRequest, NextResponse } from "next/server";
-import { join } from "path";
 import { parse } from "papaparse";
 import parseColumns from "@/utils/util";
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 export async function GET(request: NextRequest) {
   const requestURL = new URL(request.url);
 
-   const filename = decodeURIComponent(requestURL.searchParams.get("filename"));
-   const columnsString = decodeURIComponent(requestURL.searchParams.get("columns"));
-   const columns = parseColumns(columnsString);
+  const fileName = decodeURIComponent(requestURL.searchParams.get("filename"));
+  const columnsString = decodeURIComponent(requestURL.searchParams.get("columns"));
+  const columns = parseColumns(columnsString);
+
+  console.log(fileName);
 
   try {
-    const filePath = join(process.cwd(), "public", "uploads", `${filename}`);
-    const fileContent = await readFile(filePath, "utf-8");
+    // Search for the file in Cloudinary by name
+    const searchResult = await cloudinary.search
+      .expression(`filename:${fileName}`)
+      .execute();
+
+    if (searchResult.total_count === 0) {
+      return NextResponse.json({ success: false, error: `File not found: ${fileName}` }, { status: 404 });
+    }
+
+    const fileUrl = searchResult.resources[0].secure_url;
+
+    // Fetch the file content from Cloudinary
+    const response = await fetch(fileUrl);
+    const fileContent = await response.text();
+
+    console.log(fileContent);
+
     const parsedData = parse(fileContent, { header: true });
     const fileColumns = parsedData.meta.fields;
     const invalidColumns = columns.filter((col) => !fileColumns.includes(col));
@@ -40,6 +62,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data: chartData }); 
     
   } catch (error) {
-    return NextResponse.json({ success: false, error: `${filename} not found in the uploads directory` },{status: 400});
+    return NextResponse.json({ success: false, error: `Error fetching or processing the file: ${error.message}` }, { status: 400 });
   }
 }
